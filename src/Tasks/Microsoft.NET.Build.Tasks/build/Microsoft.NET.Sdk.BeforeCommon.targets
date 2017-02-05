@@ -9,7 +9,7 @@ WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and
 Copyright (c) .NET Foundation. All rights reserved. 
 ***********************************************************************************************
 -->
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" InitialTargets="_ValidateRuntimeAndFramework" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
@@ -138,5 +138,23 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup>
     <ProjectCapability Include="GenerateDocumentationFile" />
   </ItemGroup>
+
+  <Target Name="_ValidateRuntimeAndFramework"
+          DependsOnTargets="_ComputeActiveTFMFileDependencies"
+          Condition=" Exists($(ProjectAssetsFile)) and '$(TargetFramework)' != '' ">
+    <PropertyGroup Condition=" '@(_ActiveTFMFileDependencies->Count())' == 0 ">
+      <_InvalidRuntimeFrameworkError Condition=" '$(BuildingSolutionFile)' != 'true' ">true</_InvalidRuntimeFrameworkError>
+      <_InvalidRuntimeFrameworkWarning Condition=" '$(BuildingSolutionFile)' == 'true' ">true</_InvalidRuntimeFrameworkWarning>
+    </PropertyGroup>
+  </Target>
+
+
+  <Target Name="_CheckForInvalidRuntimeAndFramework" BeforeTargets="$(BuildDependsOn);Build;$(RebuildDependsOn);Rebuild;$(CleanDependsOn);Clean">
+    <PropertyGroup>
+      <_InvalidConfigurationMessageText>There are no resolved dependencies for project '$(MSBuildProjectFile)'.  Please check to make sure that the project supports TargetFramework '$(TargetFramework)'.</_InvalidConfigurationMessageText>
+    </PropertyGroup>
+    <Error Condition=" '$(_InvalidRuntimeFrameworkError)' == 'true' " Text="$(_InvalidConfigurationMessageText)" />
+    <Warning Condition=" '$(_InvalidRuntimeFrameworkWarning)' == 'true' " Text="$(_InvalidConfigurationMessageText)" />
+  </Target>
 
 </Project>

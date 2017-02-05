@@ -14,7 +14,7 @@ namespace Microsoft.NET.Build.Tests
     public class GivenThatWeWantToBuildACrossTargettingSolution : SdkTest
     {
         [Fact]
-        public void It_builds_solusuccessfully()
+        public void It_builds_successfully_for_netcoreapp10()
         {
             var testAsset = _testAssetsManager
                 .CopyTestAsset("CrossTargettingSolution")
@@ -28,18 +28,35 @@ namespace Microsoft.NET.Build.Tests
 
             var buildCommand = new BuildCommand(Stage0MSBuild, testAsset.TestRoot, "CrossTargettingSolution.sln");
             buildCommand
+                .Execute("/p:TargetFramework=netcoreapp1.0")
+                .Should()
+                .Pass();
+        }
+        [Fact]
+        public void It_builds_successfully_for_netstandard15_and_produces_output()
+        {
+            var testAsset = _testAssetsManager
+                .CopyTestAsset("CrossTargettingSolution")
+                .WithSource();
+
+            var restoreCommand = new RestoreCommand(Stage0MSBuild, testAsset.TestRoot, "CrossTargettingSolution.sln");
+            restoreCommand
                 .Execute()
                 .Should()
                 .Pass();
 
-            buildCommand.GetOutputDirectory("netcoreapp1.0", Path.Combine("x64", "Debug"))
+            var buildCommand = new BuildCommand(Stage0MSBuild, testAsset.TestRoot, "CrossTargettingSolution.sln");
+            buildCommand
+                .Execute("/p:TargetFramework=netstandard1.5")
+                .Should()
+                .Pass();
+
+            new DirectoryInfo(Path.Combine(buildCommand.ProjectRootPath, "DesktopAndNetStandard", "bin", "Debug", "netstandard1.5"))
                 .Should()
                 .OnlyHaveFiles(new[] {
-                    "x64SolutionBuild.runtimeconfig.dev.json",
-                    "x64SolutionBuild.runtimeconfig.json",
-                    "x64SolutionBuild.deps.json",
-                    "x64SolutionBuild.dll",
-                    "x64SolutionBuild.pdb"
+                    "DesktopAndNetStandard.deps.json",
+                    "DesktopAndNetStandard.dll",
+                    "DesktopAndNetStandard.pdb"
                 });
         }
     }
